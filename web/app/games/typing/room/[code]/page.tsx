@@ -1,10 +1,10 @@
 import StudentRoomClient from "@/components/typing/StudentRoomClient";
 
-export default function TypingStudentPage({
+export default async function TypingStudentPage({
   params,
 }: {
-  params: { code: string };
+  params: Promise<{ code: string }>;
 }) {
-  return <StudentRoomClient roomCode={params.code} />;
+  const { code } = await params;
+  return <StudentRoomClient roomCode={code} />;
 }
-

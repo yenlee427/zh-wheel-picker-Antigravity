@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Play, Square, Copy } from "lucide-react";
+import { ROUND_DURATION_OPTIONS_SEC } from "@/lib/typing/constants";
 import { RoomSettings, RoomStatus } from "@/lib/typing/types";
 import SpeedSelector from "./SpeedSelector";
 
@@ -28,7 +29,7 @@ export default function TeacherSetupPanel({
   onStartGame,
   onEndGame,
 }: TeacherSetupPanelProps) {
-  const canEditSettings = status === "setup" || status === "lobby";
+  const canEditSettings = status !== "running";
   const shareUrl = `${appUrl || ""}/games/typing/room/${roomCode}`;
 
   const copyRoomCode = async () => {
@@ -63,8 +64,8 @@ export default function TeacherSetupPanel({
             status === "running"
               ? "bg-emerald-100 text-emerald-700"
               : status === "finished"
-              ? "bg-gray-200 text-gray-700"
-              : "bg-amber-100 text-amber-700"
+                ? "bg-gray-200 text-gray-700"
+                : "bg-amber-100 text-amber-700"
           }`}
         >
           {status === "running" ? "進行中" : status === "finished" ? "已結束" : "等待開始"}
@@ -118,6 +119,36 @@ export default function TeacherSetupPanel({
           onChange={(speedLevel) => onSettingsChange({ ...settings, speedLevel })}
         />
 
+        <div>
+          <label className="text-sm font-medium text-gray-700">遊戲時長</label>
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {ROUND_DURATION_OPTIONS_SEC.map((seconds) => {
+              const selected = settings.roundDurationSec === seconds;
+              const minuteLabel = `${Math.floor(seconds / 60)} 分鐘`;
+              return (
+                <button
+                  key={seconds}
+                  type="button"
+                  disabled={!canEditSettings || disabled}
+                  onClick={() =>
+                    onSettingsChange({ ...settings, roundDurationSec: seconds })
+                  }
+                  className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
+                    selected
+                      ? "border-indigo-500 bg-indigo-500 text-white"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {minuteLabel}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-gray-500">
+            每局開始後 {Math.floor(settings.roundDurationSec / 60)} 分鐘自動結束。
+          </p>
+        </div>
+
         <div className="text-sm text-gray-600">玩家上限：{settings.maxPlayers}</div>
         <div className="text-sm text-gray-600">目前玩家：{playerCount}</div>
       </div>
@@ -130,7 +161,7 @@ export default function TeacherSetupPanel({
           className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
         >
           <Play size={16} />
-          開始遊戲
+          {status === "finished" ? "重新開始" : "開始遊戲"}
         </button>
         <button
           type="button"
@@ -145,4 +176,3 @@ export default function TeacherSetupPanel({
     </section>
   );
 }
-

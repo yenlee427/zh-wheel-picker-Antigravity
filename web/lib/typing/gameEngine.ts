@@ -153,7 +153,7 @@ export class TypingGameEngine {
     }
 
     const elapsedMs = nowMs - this.startAt;
-    while (elapsedMs >= this.nextSpawnAtMs && !this.isGameOver) {
+    if (elapsedMs >= this.nextSpawnAtMs && !this.isGameOver) {
       const spawned = this.spawnOne(preset.fallSpeedPxPerSec, nowMs);
       this.nextSpawnAtMs += preset.spawnIntervalMs;
       changed = changed || spawned;
@@ -210,8 +210,8 @@ export class TypingGameEngine {
 }
 
 export const getLaneCount = (width: number): number => {
-  if (width < 640) return 2;
-  if (width < 1024) return 3;
-  return 4;
+  if (width < 480) return 2;
+  if (width < 700) return 3;
+  if (width < 860) return 4;
+  return 5;
 };
-

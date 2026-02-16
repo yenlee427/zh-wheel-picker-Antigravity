@@ -38,10 +38,7 @@ const getStoredPlayerId = (roomCode: string): string => {
 
 export default function StudentRoomClient({ roomCode }: StudentRoomClientProps) {
   const normalizedRoomCode = normalizeRoomCode(roomCode);
-  const [displayName, setDisplayName] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem(STORAGE_KEYS.DISPLAY_NAME) || "";
-  });
+  const [displayName, setDisplayName] = useState("");
   const [submittedName, setSubmittedName] = useState("");
   const [playerId, setPlayerId] = useState("");
   const [joinRequested, setJoinRequested] = useState(false);
@@ -53,6 +50,7 @@ export default function StudentRoomClient({ roomCode }: StudentRoomClientProps) 
   const [localScore, setLocalScore] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameEndedAt, setGameEndedAt] = useState<number | null>(null);
+  const [nowMs, setNowMs] = useState(0);
   const [connectionState, setConnectionState] = useState<Ably.ConnectionState>("initialized");
   const [connectionToast, setConnectionToast] = useState<{
     tone: "info" | "success" | "warning";
@@ -84,6 +82,19 @@ export default function StudentRoomClient({ roomCode }: StudentRoomClientProps) 
       }
     };
   }, []);
+
+  useEffect(() => {
+    const savedName = localStorage.getItem(STORAGE_KEYS.DISPLAY_NAME);
+    if (!savedName) return;
+    queueMicrotask(() => setDisplayName(savedName));
+  }, []);
+
+  useEffect(() => {
+    if (!gameStart || roomState?.status !== "running") return;
+    setNowMs(Date.now());
+    const timer = window.setInterval(() => setNowMs(Date.now()), 250);
+    return () => window.clearInterval(timer);
+  }, [gameStart, roomState?.status]);
 
   const showConnectionToast = useCallback(
     (tone: "info" | "success" | "warning", message: string) => {
@@ -211,7 +222,21 @@ export default function StudentRoomClient({ roomCode }: StudentRoomClientProps) 
       });
       stateChannel.unsubscribe();
       realtime.connection.off(handleConnection);
-      realtime.close();
+      try {
+        if (
+          realtime.connection.state !== "closed" &&
+          realtime.connection.state !== "closing"
+        ) {
+          realtime.close();
+        }
+      } catch (closeError) {
+        if (
+          !(closeError instanceof Error) ||
+          !closeError.message.includes("Connection closed")
+        ) {
+          console.warn("Unexpected realtime close error", closeError);
+        }
+      }
       realtimeRef.current = null;
       eventsChannelRef.current = null;
     };
@@ -242,19 +267,22 @@ export default function StudentRoomClient({ roomCode }: StudentRoomClientProps) 
     setJoinRequested(true);
   };
 
-  const onScoreChange = async (score: number) => {
-    if (!playerId) return;
-    setLocalScore(score);
-    await publishEvent("SCORE_REPORT", {
-      type: "SCORE_REPORT",
-      payload: {
-        playerId,
-        score,
-      },
-    });
-  };
+  const onScoreChange = useCallback(
+    async (score: number) => {
+      if (!playerId) return;
+      setLocalScore(score);
+      await publishEvent("SCORE_REPORT", {
+        type: "SCORE_REPORT",
+        payload: {
+          playerId,
+          score,
+        },
+      });
+    },
+    [playerId, publishEvent]
+  );
 
-  const onGameOver = async () => {
+  const onGameOver = useCallback(async () => {
     if (!playerId || isGameOver) return;
     setIsGameOver(true);
     await publishEvent("PLAYER_GAME_OVER", {
@@ -263,10 +291,26 @@ export default function StudentRoomClient({ roomCode }: StudentRoomClientProps) 
         playerId,
       },
     });
-  };
+  }, [isGameOver, playerId, publishEvent]);
+
+  const roundEndAt = useMemo(() => {
+    if (!gameStart) return null;
+    return gameStart.startAt + gameStart.settings.roundDurationSec * 1000;
+  }, [gameStart]);
+
+  const roundRemainingSeconds = useMemo(() => {
+    if (!roundEndAt) return null;
+    return Math.max(0, Math.ceil((roundEndAt - nowMs) / 1000));
+  }, [nowMs, roundEndAt]);
+
+  const localTimedOut = roundRemainingSeconds === 0 && roomState?.status === "running";
 
   const gameRunning =
-    roomState?.status === "running" && !!gameStart && !joinBlocked && joinAccepted;
+    roomState?.status === "running" &&
+    !!gameStart &&
+    !joinBlocked &&
+    joinAccepted &&
+    !localTimedOut;
 
   const myPlayer = useMemo(() => {
     if (!roomState || !playerId) return null;
@@ -340,7 +384,11 @@ export default function StudentRoomClient({ roomCode }: StudentRoomClientProps) 
               ) : (
                 <section className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
                   <h2 className="text-lg font-semibold text-gray-900">等待遊戲開始</h2>
-                  {joinBlocked ? (
+                  {localTimedOut ? (
+                    <p className="text-sm text-amber-700">
+                      {"\u672c\u5c40\u6642\u9593\u5df2\u5230\uff0c\u7b49\u5f85\u8001\u5e2b\u7d50\u675f\u672c\u56de\u5408\u3002"}
+                    </p>
+                  ) : joinBlocked ? (
                     <p className="text-sm text-amber-700">
                       遊戲進行中，請等待老師開啟下一局。
                     </p>
@@ -378,6 +426,13 @@ export default function StudentRoomClient({ roomCode }: StudentRoomClientProps) 
                   {myPlayer?.name || submittedName}
                 </p>
                 <p className="text-sm text-indigo-700 mt-1">目前分數：{localScore}</p>
+                {roundRemainingSeconds !== null && roomState?.status === "running" && (
+                  <p className="text-sm text-emerald-700 mt-1">
+                    {"\u5269\u9918\u6642\u9593\uff1a"}
+                    {Math.floor(roundRemainingSeconds / 60)}:
+                    {String(roundRemainingSeconds % 60).padStart(2, "0")}
+                  </p>
+                )}
                 <p className="text-xs text-gray-500 mt-2">
                   {isGameOver ? "你已達到遊戲結束條件。" : "持續輸入命中可提升分數。"}
                 </p>

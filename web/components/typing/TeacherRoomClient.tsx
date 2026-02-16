@@ -8,6 +8,7 @@ import { AlertTriangle, Users } from "lucide-react";
 import { createTypingRealtimeClient } from "@/lib/typing/ablyClient";
 import {
   DEFAULT_MAX_PLAYERS,
+  DEFAULT_ROUND_DURATION_SEC,
   DEFAULT_WORD_COUNT,
   DEFAULT_WORDS,
   ROOM_STATE_THROTTLE_MS,
@@ -34,6 +35,9 @@ const getDefaultWords = (count: number): string[] => {
   return words;
 };
 
+const normalizeRoundDurationSec = (value: number): number =>
+  Math.max(60, Math.min(600, Math.round(value)));
+
 const createInitialRoomState = (roomCode: string, teacherClientId: string): RoomState => ({
   roomCode,
   status: "lobby",
@@ -41,6 +45,7 @@ const createInitialRoomState = (roomCode: string, teacherClientId: string): Room
     wordCount: DEFAULT_WORD_COUNT,
     speedLevel: 2,
     maxPlayers: DEFAULT_MAX_PLAYERS,
+    roundDurationSec: DEFAULT_ROUND_DURATION_SEC,
   },
   words: getDefaultWords(DEFAULT_WORD_COUNT),
   teacherClientId,
@@ -57,38 +62,35 @@ type TeacherRoomClientProps = {
 
 export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) {
   const router = useRouter();
-  const [teacherSession] = useState(() => {
-    if (typeof window === "undefined") {
-      return { ticket: "", clientId: "" };
-    }
-    return {
-      ticket: sessionStorage.getItem(getTeacherTicketKey(roomCode)) || "",
-      clientId: sessionStorage.getItem(getTeacherClientIdKey(roomCode)) || "",
-    };
-  });
-  const teacherTicket = teacherSession.ticket;
-  const teacherClientId = teacherSession.clientId;
+  const [teacherSession, setTeacherSession] = useState<{
+    ticket: string;
+    clientId: string;
+  } | null>(null);
+  const teacherTicket = teacherSession?.ticket ?? "";
+  const teacherClientId = teacherSession?.clientId ?? "";
+  const hasTeacherCredentials = Boolean(teacherTicket && teacherClientId);
   const [roomState, setRoomState] = useState<RoomState>(() =>
-    createInitialRoomState(roomCode, teacherClientId)
+    createInitialRoomState(roomCode, "")
   );
   const roomStateRef = useRef(roomState);
-  const [connectionState, setConnectionState] = useState<Ably.ConnectionState>(
-    teacherTicket && teacherClientId ? "connecting" : "disconnected"
-  );
+  const [connectionState, setConnectionState] = useState<Ably.ConnectionState>("initialized");
   const [connectionToast, setConnectionToast] = useState<{
     tone: "info" | "success" | "warning";
     message: string;
   } | null>(null);
-  const [error, setError] = useState<string | null>(
-    teacherTicket && teacherClientId
+  const [error, setError] = useState<string | null>(null);
+  const credentialError =
+    teacherSession === null
       ? null
-      : "找不到老師憑證，請回入口頁重新建立房間。"
-  );
+      : hasTeacherCredentials
+      ? null
+      : "找不到老師憑證，請回入口頁重新建立房間。";
 
   const realtimeRef = useRef<Ably.Realtime | null>(null);
   const stateChannelRef = useRef<Ably.RealtimeChannel | null>(null);
   const eventsChannelRef = useRef<Ably.RealtimeChannel | null>(null);
   const roomStateTimerRef = useRef<number | null>(null);
+  const roundAutoEndTimerRef = useRef<number | null>(null);
   const connectionToastTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -96,9 +98,21 @@ export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) 
   }, [roomState]);
 
   useEffect(() => {
+    const ticket = sessionStorage.getItem(getTeacherTicketKey(roomCode)) || "";
+    const clientId = sessionStorage.getItem(getTeacherClientIdKey(roomCode)) || "";
+    queueMicrotask(() => {
+      setTeacherSession({ ticket, clientId });
+    });
+  }, [roomCode]);
+
+  useEffect(() => {
     return () => {
       if (connectionToastTimerRef.current !== null) {
         window.clearTimeout(connectionToastTimerRef.current);
+      }
+      if (roundAutoEndTimerRef.current !== null) {
+        window.clearTimeout(roundAutoEndTimerRef.current);
+        roundAutoEndTimerRef.current = null;
       }
     };
   }, []);
@@ -167,6 +181,7 @@ export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) 
         const candidate = updater(previous);
         const next: RoomState = {
           ...candidate,
+          teacherClientId: candidate.teacherClientId || teacherClientId,
           revision: previous.revision + 1,
           updatedAt: Date.now(),
         };
@@ -177,10 +192,18 @@ export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) 
         return next;
       });
     },
-    [queueRoomStateBroadcast]
+    [queueRoomStateBroadcast, teacherClientId]
   );
 
+  const clearRoundAutoEndTimer = useCallback(() => {
+    if (roundAutoEndTimerRef.current !== null) {
+      window.clearTimeout(roundAutoEndTimerRef.current);
+      roundAutoEndTimerRef.current = null;
+    }
+  }, []);
+
   const endGame = useCallback(async () => {
+    clearRoundAutoEndTimer();
     let endedAt = Date.now();
     applyRoomUpdate(
       (previous) => {
@@ -194,10 +217,10 @@ export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) 
       { immediate: true }
     );
     await publishStateEvent("GAME_END", { type: "GAME_END", payload: { endedAt } });
-  }, [applyRoomUpdate, publishStateEvent]);
+  }, [applyRoomUpdate, clearRoundAutoEndTimer, publishStateEvent]);
 
   useEffect(() => {
-    if (!teacherTicket || !teacherClientId || error) return;
+    if (!hasTeacherCredentials || error) return;
 
     const realtime = createTypingRealtimeClient({
       role: "teacher",
@@ -372,18 +395,35 @@ export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) 
         window.clearTimeout(roomStateTimerRef.current);
         roomStateTimerRef.current = null;
       }
+      clearRoundAutoEndTimer();
       stateChannel.unsubscribe();
       eventsChannel.unsubscribe();
       realtime.connection.off(handleConnection);
-      realtime.close();
+      try {
+        if (
+          realtime.connection.state !== "closed" &&
+          realtime.connection.state !== "closing"
+        ) {
+          realtime.close();
+        }
+      } catch (closeError) {
+        if (
+          !(closeError instanceof Error) ||
+          !closeError.message.includes("Connection closed")
+        ) {
+          console.warn("Unexpected realtime close error", closeError);
+        }
+      }
       realtimeRef.current = null;
       stateChannelRef.current = null;
       eventsChannelRef.current = null;
     };
   }, [
     applyRoomUpdate,
+    clearRoundAutoEndTimer,
     endGame,
     error,
+    hasTeacherCredentials,
     queueRoomStateBroadcast,
     roomCode,
     showConnectionToast,
@@ -395,12 +435,18 @@ export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) 
     applyRoomUpdate((previous) => {
       if (previous.status === "running") return previous;
       const nextCount = Math.max(5, Math.min(60, next.wordCount));
+      const nextDurationSec = normalizeRoundDurationSec(next.roundDurationSec);
       const paddedWords = Array.from({ length: nextCount }, (_, index) =>
         previous.words[index] ?? ""
       );
       return {
         ...previous,
-        settings: { ...previous.settings, ...next, wordCount: nextCount },
+        settings: {
+          ...previous.settings,
+          ...next,
+          wordCount: nextCount,
+          roundDurationSec: nextDurationSec,
+        },
         words: paddedWords,
       };
     });
@@ -416,6 +462,8 @@ export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) 
   };
 
   const startGame = async () => {
+    if (roomState.status === "running") return;
+
     const validWords = roomState.words
       .map((word) => word.trim())
       .filter((word) => word.length > 0)
@@ -431,6 +479,12 @@ export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) 
 
     const seed = crypto.randomUUID();
     const startAt = Date.now() + 3000;
+    const roundDurationSec = normalizeRoundDurationSec(roomState.settings.roundDurationSec);
+    const nextSettings = {
+      ...roomState.settings,
+      wordCount: validWords.length,
+      roundDurationSec,
+    };
 
     applyRoomUpdate(
       (previous) => ({
@@ -438,7 +492,7 @@ export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) 
         status: "running",
         seed,
         startAt,
-        settings: { ...previous.settings, wordCount: validWords.length },
+        settings: nextSettings,
         words: validWords,
         players: previous.players.map((player) => ({
           ...player,
@@ -455,10 +509,17 @@ export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) 
       payload: {
         seed,
         startAt,
-        settings: { ...roomState.settings, wordCount: validWords.length },
+        settings: nextSettings,
         words: validWords,
       },
     });
+
+    clearRoundAutoEndTimer();
+    const roundEndAt = startAt + roundDurationSec * 1000;
+    const autoEndDelay = Math.max(0, roundEndAt - Date.now());
+    roundAutoEndTimerRef.current = window.setTimeout(() => {
+      void endGame();
+    }, autoEndDelay);
   };
 
   const appUrl = useMemo(() => {
@@ -466,7 +527,17 @@ export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) 
     return typeof window === "undefined" ? "" : window.location.origin;
   }, []);
 
-  if (error) {
+  if (teacherSession === null) {
+    return (
+      <main className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-3xl mx-auto bg-white border border-gray-200 rounded-xl p-6 text-gray-600">
+          正在讀取老師憑證...
+        </div>
+      </main>
+    );
+  }
+
+  if (error || credentialError) {
     return (
       <main className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-3xl mx-auto bg-white border border-red-200 rounded-xl p-6 space-y-4">
@@ -474,7 +545,7 @@ export default function TeacherRoomClient({ roomCode }: TeacherRoomClientProps) 
             <AlertTriangle size={18} />
             無法進入老師控制台
           </h1>
-          <p className="text-gray-700">{error}</p>
+          <p className="text-gray-700">{error || credentialError}</p>
           <div className="flex gap-3">
             <Link href="/games/typing" className="px-4 py-2 rounded-md bg-indigo-600 text-white">
               返回遊戲入口

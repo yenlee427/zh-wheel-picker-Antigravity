@@ -1,10 +1,10 @@
 import TeacherRoomClient from "@/components/typing/TeacherRoomClient";
 
-export default function TypingTeacherPage({
+export default async function TypingTeacherPage({
   params,
 }: {
-  params: { code: string };
+  params: Promise<{ code: string }>;
 }) {
-  return <TeacherRoomClient roomCode={params.code} />;
+  const { code } = await params;
+  return <TeacherRoomClient roomCode={code} />;
 }
-

@@ -23,6 +23,14 @@ type GameBoardProps = {
   className?: string;
 };
 
+type HitEffect = {
+  id: string;
+  word: string;
+  x: number;
+  y: number;
+  width: number;
+};
+
 const BOARD_MIN_HEIGHT = 420;
 const BOARD_MAX_HEIGHT = 680;
 
@@ -39,10 +47,14 @@ export default function GameBoard({
   const rafRef = useRef<number | null>(null);
   const engineRef = useRef<TypingGameEngine | null>(null);
   const emittedGameOverRef = useRef(false);
+  const onScoreChangeRef = useRef(onScoreChange);
+  const onGameOverRef = useRef(onGameOver);
   const [snapshot, setSnapshot] = useState<GameEngineSnapshot | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [isComposing, setIsComposing] = useState(false);
   const [countdownNow, setCountdownNow] = useState(startAt);
+  const [hitEffects, setHitEffects] = useState<HitEffect[]>([]);
+  const effectTimersRef = useRef<number[]>([]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setCountdownNow(Date.now()), 150);
@@ -50,8 +62,30 @@ export default function GameBoard({
   }, []);
 
   useEffect(() => {
+    return () => {
+      for (const timerId of effectTimersRef.current) {
+        window.clearTimeout(timerId);
+      }
+      effectTimersRef.current = [];
+    };
+  }, []);
+
+  useEffect(() => {
+    onScoreChangeRef.current = onScoreChange;
+  }, [onScoreChange]);
+
+  useEffect(() => {
+    onGameOverRef.current = onGameOver;
+  }, [onGameOver]);
+
+  useEffect(() => {
     const board = boardRef.current;
     if (!board) return;
+    for (const timerId of effectTimersRef.current) {
+      window.clearTimeout(timerId);
+    }
+    effectTimersRef.current = [];
+    setHitEffects([]);
 
     const width = Math.max(280, board.clientWidth);
     const height = Math.max(
@@ -74,23 +108,23 @@ export default function GameBoard({
     setSnapshot(engine.getSnapshot());
     setInputValue("");
 
-    const loop = (now: number) => {
+    const loop = () => {
       const activeEngine = engineRef.current;
       if (!activeEngine) return;
 
-      const changed = activeEngine.update(now);
+      const changed = activeEngine.update(Date.now());
       if (changed) {
         const next = activeEngine.getSnapshot();
         setSnapshot(next);
         if (next.isGameOver && !emittedGameOverRef.current) {
           emittedGameOverRef.current = true;
-          onGameOver?.();
+          onGameOverRef.current?.();
         }
       } else {
         const next = activeEngine.getSnapshot();
         if (next.isGameOver && !emittedGameOverRef.current) {
           emittedGameOverRef.current = true;
-          onGameOver?.();
+          onGameOverRef.current?.();
         }
       }
 
@@ -116,7 +150,7 @@ export default function GameBoard({
       rafRef.current = null;
       engineRef.current = null;
     };
-  }, [words, speedLevel, seed, startAt, onGameOver, onScoreChange]);
+  }, [words, speedLevel, seed, startAt]);
 
   const handleSubmit = () => {
     const engine = engineRef.current;
@@ -125,9 +159,32 @@ export default function GameBoard({
     const result = engine.submitInput(inputValue);
     if (result.hit) {
       setInputValue("");
+      if (result.removedBlockId && snapshot) {
+        const removed = snapshot.blocks.find((block) => block.id === result.removedBlockId);
+        if (removed) {
+          const effectWidth = Math.max(54, laneWidth - 8);
+          const effectX = removed.lane * laneWidth + 4;
+          const effectId = `${removed.id}-${Date.now()}`;
+          setHitEffects((prev) => [
+            ...prev,
+            {
+              id: effectId,
+              word: removed.word,
+              x: effectX,
+              y: removed.y,
+              width: effectWidth,
+            },
+          ]);
+          const timerId = window.setTimeout(() => {
+            setHitEffects((prev) => prev.filter((effect) => effect.id !== effectId));
+            effectTimersRef.current = effectTimersRef.current.filter((id) => id !== timerId);
+          }, 560);
+          effectTimersRef.current.push(timerId);
+        }
+      }
       const next = engine.getSnapshot();
       setSnapshot(next);
-      onScoreChange?.(result.score);
+      onScoreChangeRef.current?.(result.score);
     }
   };
 
@@ -173,11 +230,11 @@ export default function GameBoard({
 
         {snapshot?.blocks.map((block) => {
           const x = block.lane * laneWidth + 4;
-          const blockWidth = Math.max(72, laneWidth - 8);
+          const blockWidth = Math.max(54, laneWidth - 8);
           return (
             <div
               key={block.id}
-              className={`absolute rounded-md px-2 py-1 text-center text-sm font-semibold text-indigo-900 border ${
+              className={`absolute flex items-center justify-center rounded-md px-1.5 py-0.5 text-center text-xs font-semibold text-indigo-900 border ${
                 block.isSettled
                   ? "bg-indigo-200/90 border-indigo-300"
                   : "bg-white/95 border-indigo-200 shadow-sm"
@@ -188,10 +245,45 @@ export default function GameBoard({
                 transform: `translate3d(${x}px, ${block.y}px, 0)`,
               }}
             >
-              <span className="line-clamp-2 break-all leading-5">{block.word}</span>
+              <span className="block max-w-full truncate leading-4">{block.word}</span>
             </div>
           );
         })}
+
+        {hitEffects.map((effect) => (
+          <div
+            key={effect.id}
+            className="absolute pointer-events-none"
+            style={{
+              width: `${effect.width}px`,
+              height: `${BLOCK_HEIGHT_PX}px`,
+              transform: `translate3d(${effect.x}px, ${effect.y}px, 0)`,
+            }}
+          >
+            <div className="relative h-full w-full overflow-visible">
+              <div
+                className="absolute inset-0 rounded-md border-2 border-amber-300/95 bg-amber-100/75"
+                style={{ animation: "typing-hit-pop 560ms cubic-bezier(0.2, 1, 0.3, 1) forwards" }}
+              />
+              <div
+                className="absolute inset-0 rounded-md bg-amber-300/80"
+                style={{ animation: "typing-hit-flash 360ms ease-out forwards" }}
+              />
+              <div
+                className="absolute inset-0 flex items-center justify-center text-xs font-extrabold text-amber-900"
+                style={{ animation: "typing-hit-word 420ms ease-out forwards" }}
+              >
+                {effect.word}
+              </div>
+              <div
+                className="absolute -top-6 left-1/2 -translate-x-1/2 rounded-full bg-amber-200/90 px-2 py-0.5 text-xs font-black text-amber-700 shadow-sm"
+                style={{ animation: "typing-hit-score 560ms ease-out forwards" }}
+              >
+                +{SCORE_PER_HIT}
+              </div>
+            </div>
+          </div>
+        ))}
 
         {snapshot?.isGameOver && (
           <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
@@ -237,6 +329,57 @@ export default function GameBoard({
           </button>
         </div>
       </div>
+      <style jsx>{`
+        @keyframes typing-hit-pop {
+          0% {
+            transform: scale(1);
+            opacity: 0.95;
+            filter: saturate(1);
+          }
+          45% {
+            transform: scale(1.2);
+            opacity: 0.92;
+            filter: saturate(1.4);
+          }
+          100% {
+            transform: scale(0.82);
+            opacity: 0;
+            filter: saturate(1);
+          }
+        }
+        @keyframes typing-hit-flash {
+          0% {
+            opacity: 0.95;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+        @keyframes typing-hit-word {
+          0% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: scale(1.08);
+          }
+        }
+        @keyframes typing-hit-score {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, 4px) scale(0.86);
+          }
+          15% {
+            opacity: 1;
+            transform: translate(-50%, 0px) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -28px) scale(1.06);
+          }
+        }
+      `}</style>
     </section>
   );
 }

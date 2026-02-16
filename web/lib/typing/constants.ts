@@ -5,9 +5,11 @@ export const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 export const DEFAULT_WORD_COUNT = 20;
 export const DEFAULT_MAX_PLAYERS = 50;
+export const DEFAULT_ROUND_DURATION_SEC = 120;
+export const ROUND_DURATION_OPTIONS_SEC = [60, 120, 180, 300] as const;
 
 export const SCORE_PER_HIT = 10;
-export const BLOCK_HEIGHT_PX = 48;
+export const BLOCK_HEIGHT_PX = 32;
 export const MAX_BLOCKS = 200;
 export const ROOM_STATE_THROTTLE_MS = 250;
 
@@ -37,11 +39,11 @@ export const DEFAULT_WORDS: string[] = [
 ];
 
 export const SPEED_PRESETS: Record<SpeedLevel, SpeedPreset> = {
-  1: { spawnIntervalMs: 1600, fallSpeedPxPerSec: 80 },
-  2: { spawnIntervalMs: 1300, fallSpeedPxPerSec: 105 },
-  3: { spawnIntervalMs: 1000, fallSpeedPxPerSec: 130 },
-  4: { spawnIntervalMs: 780, fallSpeedPxPerSec: 160 },
-  5: { spawnIntervalMs: 620, fallSpeedPxPerSec: 190 },
+  1: { spawnIntervalMs: 3200, fallSpeedPxPerSec: 34 },
+  2: { spawnIntervalMs: 2700, fallSpeedPxPerSec: 42 },
+  3: { spawnIntervalMs: 2200, fallSpeedPxPerSec: 52 },
+  4: { spawnIntervalMs: 1800, fallSpeedPxPerSec: 64 },
+  5: { spawnIntervalMs: 1450, fallSpeedPxPerSec: 78 },
 };
 
 export const STORAGE_KEYS = {
@@ -61,4 +63,3 @@ export const getStateChannelName = (roomCode: string) =>
 
 export const getEventsChannelName = (roomCode: string) =>
   `typing-room:${roomCode}:events`;
-

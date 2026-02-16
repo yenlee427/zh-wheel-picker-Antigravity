@@ -8,6 +8,7 @@ export type RoomSettings = {
   wordCount: number;
   speedLevel: SpeedLevel;
   maxPlayers: number;
+  roundDurationSec: number;
 };
 
 export type Player = {
@@ -127,4 +128,3 @@ export type TokenRequestBody = {
 export type TokenRequestResponse = {
   tokenRequest: unknown;
 };
-
