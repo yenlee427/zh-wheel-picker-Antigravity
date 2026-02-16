@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import Link from "next/link";
-import { Plus } from "lucide-react";
 import { useAppState } from "@/lib/contexts/AppStateContext";
 import DashboardWheelCard from "@/components/DashboardWheelCard";
 import { MONO_COLORS } from "@/lib/constants";

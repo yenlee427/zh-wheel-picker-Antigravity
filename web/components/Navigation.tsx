@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Disc, Settings } from "lucide-react";
+import { Disc, Keyboard, Settings } from "lucide-react";
 import SettingsModal from "./SettingsModal";
 
 export default function Navigation() {
     const pathname = usePathname();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const isTypingRoute = pathname.startsWith("/games/typing");
 
     if (pathname === "/") return null;
 
@@ -51,6 +52,16 @@ export default function Navigation() {
                                         }`}
                                 >
                                     挑戰統計
+                                </Link>
+                                <Link
+                                    href="/games/typing"
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center gap-1 ${isTypingRoute
+                                        ? "bg-indigo-100 text-indigo-700"
+                                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                        }`}
+                                >
+                                    <Keyboard size={14} />
+                                    輸入法遊戲
                                 </Link>
                             </div>
                             <button

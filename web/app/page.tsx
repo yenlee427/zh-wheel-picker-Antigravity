@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Disc, LayoutGrid, ArrowRight } from "lucide-react";
+import { Disc, LayoutGrid, ArrowRight, Keyboard } from "lucide-react";
 
 export default function Home() {
   return (
@@ -14,7 +14,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mt-12">
+        <div className="grid md:grid-cols-3 gap-6 mt-12">
           {/* Single Mode Card */}
           <Link
             href="/single"
@@ -50,6 +50,25 @@ export default function Home() {
             </p>
             <div className="flex items-center text-emerald-600 font-medium group-hover:translate-x-1 transition-transform">
               打開總覽 <ArrowRight className="w-4 h-4 ml-1" />
+            </div>
+          </Link>
+
+          {/* Typing Game Card */}
+          <Link
+            href="/games/typing"
+            className="group relative flex flex-col items-start p-8 bg-white rounded-2xl shadow-sm border border-gray-200 hover:border-sky-500 hover:shadow-md transition-all duration-300"
+          >
+            <div className="p-3 bg-sky-50 rounded-xl group-hover:bg-sky-100 transition-colors mb-4">
+              <Keyboard className="w-8 h-8 text-sky-600" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+              中文輸入法遊戲
+            </h2>
+            <p className="text-gray-500 mb-6 flex-grow">
+              老師建立房間後，學生即時加入挑戰。輸入正確生詞可消除方塊並更新排行榜。
+            </p>
+            <div className="flex items-center text-sky-600 font-medium group-hover:translate-x-1 transition-transform">
+              前往遊戲 <ArrowRight className="w-4 h-4 ml-1" />
             </div>
           </Link>
         </div>
