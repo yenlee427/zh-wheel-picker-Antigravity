@@ -33,7 +33,7 @@ export default function Controls({
         `}
             >
                 <Play className={isSpinning ? "animate-spin" : ""} fill="currentColor" />
-                {isSpinning ? "抽選中..." : "開始旋轉"}
+                {isSpinning ? "出題中..." : "抽一題"}
             </button>
 
             <div className="grid grid-cols-2 gap-3">
@@ -51,7 +51,7 @@ export default function Controls({
                     className="py-3 px-4 rounded-lg bg-white border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 hover:text-red-500 transition-colors flex items-center justify-center gap-2"
                 >
                     <Trash2 size={18} />
-                    清空格子
+                    清空題目
                 </button>
             </div>
         </div>

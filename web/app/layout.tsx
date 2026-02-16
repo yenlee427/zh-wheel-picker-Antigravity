@@ -7,8 +7,8 @@ import Navigation from "@/components/Navigation";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "繁中輪盤抽選器",
-  description: "簡單好用的線上抽籤工具",
+  title: "中文小遊戲樂園",
+  description: "用抽題方式玩中文挑戰，支援多題庫管理與即時統計。",
 };
 
 export default function RootLayout({

@@ -24,13 +24,13 @@ export default function SlotEditor({
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-700">選項編輯</h3>
+                <h3 className="font-semibold text-gray-700">題目編輯</h3>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => handleCountChange(-1)}
                         disabled={slotCount <= 2}
                         className="p-1 rounded hover:bg-gray-200 disabled:opacity-50"
-                        aria-label="減少格子"
+                        aria-label="減少題目"
                     >
                         <Minus size={16} />
                     </button>
@@ -39,7 +39,7 @@ export default function SlotEditor({
                         onClick={() => handleCountChange(1)}
                         disabled={slotCount >= 50}
                         className="p-1 rounded hover:bg-gray-200 disabled:opacity-50"
-                        aria-label="增加格子"
+                        aria-label="增加題目"
                     >
                         <Plus size={16} />
                     </button>
@@ -56,7 +56,7 @@ export default function SlotEditor({
                             type="text"
                             value={slot.label}
                             onChange={(e) => onSlotChange(index, e.target.value)}
-                            placeholder={`選項 ${index + 1}`}
+                            placeholder={`題目 ${index + 1}`}
                             className="flex-grow px-3 py-2 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
                         />
                     </div>

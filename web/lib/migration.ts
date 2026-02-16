@@ -22,7 +22,7 @@ function buildEmptySlots(count: number): { label: string }[] {
 function createDefaultAppState(): StoredAppState {
     const defaultList: WheelList = {
         id: generateUUID(),
-        name: "我的第一個清單",
+        name: "我的第一個題庫",
         settings: { slotCount: 10 },
         slots: buildEmptySlots(10),
         history: [],
@@ -83,7 +83,7 @@ export function runMigration(): StoredAppState | null {
 
     const migratedList: WheelList = {
         id: generateUUID(),
-        name: "預設清單", // Migrated list name
+        name: "預設題庫", // Migrated list name
         settings: { slotCount: settings.slotCount },
         slots: slots.map(s => ({ label: s.label })), // Ensure structure match
         history: history.map(h => ({

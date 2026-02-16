@@ -36,12 +36,12 @@ export default function StatsClient() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             <div className="flex items-center gap-2">
                 <BarChart3 className="w-8 h-8 text-indigo-600" />
-                <h1 className="text-2xl font-bold text-gray-900">統計數據</h1>
+                <h1 className="text-2xl font-bold text-gray-900">挑戰統計</h1>
             </div>
 
             {stats.length === 0 ? (
                 <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-                    <p className="text-gray-500">尚無任何抽選紀錄</p>
+                    <p className="text-gray-500">尚無任何出題紀錄</p>
                 </div>
             ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -50,7 +50,7 @@ export default function StatsClient() {
                             <h3 className="font-bold text-lg mb-2 text-gray-800 border-b border-gray-100 pb-2 flex justify-between">
                                 <span className="truncate pr-2">{list.name}</span>
                                 <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full self-start">
-                                    共 {list.totalSpins} 次
+                                    共 {list.totalSpins} 回合
                                 </span>
                             </h3>
 

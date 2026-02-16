@@ -18,7 +18,7 @@ export default function ResultBanner({ result }: ResultBannerProps) {
         >
             <div className="flex items-center justify-center gap-2 mb-1 text-indigo-200 text-sm font-medium uppercase tracking-wider">
                 <Sparkles size={16} />
-                抽選結果
+                本回合題目
                 <Sparkles size={16} />
             </div>
             <div className="text-3xl font-bold break-words">{result}</div>

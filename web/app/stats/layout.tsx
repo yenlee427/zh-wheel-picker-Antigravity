@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "統計數據 | 繁中輪盤抽選器",
-    description: "查看還盤的歷史統計記錄",
+    title: "挑戰統計 | 中文小遊戲樂園",
+    description: "查看中文小遊戲的抽題統計記錄",
 };
 
 export default function StatsLayout({

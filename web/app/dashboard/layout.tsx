@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "多輪盤總覽 | 繁中輪盤抽選器",
-    description: "同時檢視與操作多個輪盤",
+    title: "題庫總覽 | 中文小遊戲樂園",
+    description: "同時檢視與操作多個中文題庫",
 };
 
 export default function DashboardLayout({

@@ -11,7 +11,7 @@ export default function HistoryList({ history }: HistoryListProps) {
     if (history.length === 0) {
         return (
             <div className="text-center py-8 text-gray-400 text-sm border-t border-gray-100">
-                尚無歷史紀錄
+                尚無出題紀錄
             </div>
         );
     }
@@ -23,7 +23,7 @@ export default function HistoryList({ history }: HistoryListProps) {
                     <thead className="bg-gray-50 sticky top-0">
                         <tr>
                             <th className="px-4 py-2 text-left font-medium text-gray-500">時間</th>
-                            <th className="px-4 py-2 text-left font-medium text-gray-500">結果</th>
+                            <th className="px-4 py-2 text-left font-medium text-gray-500">題目</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">

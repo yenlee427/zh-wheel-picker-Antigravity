@@ -20,7 +20,7 @@ export default function Navigation() {
                         <div className="flex-shrink-0 flex items-center">
                             <Link href="/" className="font-bold text-xl text-indigo-600 flex items-center gap-2">
                                 <Disc className="w-6 h-6" />
-                                <span>繁中輪盤抽選器</span>
+                                <span>中文小遊戲樂園</span>
                             </Link>
                         </div>
                         <div className="flex items-center gap-4">
@@ -32,7 +32,7 @@ export default function Navigation() {
                                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                         }`}
                                 >
-                                    單輪盤管理
+                                    單人模式
                                 </Link>
                                 <Link
                                     href="/dashboard"
@@ -41,7 +41,7 @@ export default function Navigation() {
                                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                         }`}
                                 >
-                                    多輪盤總覽
+                                    題庫總覽
                                 </Link>
                                 <Link
                                     href="/stats"
@@ -50,7 +50,7 @@ export default function Navigation() {
                                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                         }`}
                                 >
-                                    統計數據
+                                    挑戰統計
                                 </Link>
                             </div>
                             <button

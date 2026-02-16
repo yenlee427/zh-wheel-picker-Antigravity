@@ -84,7 +84,7 @@ export default function SingleClient() {
             .filter((i) => i >= 0);
 
         if (validIndices.length === 0) {
-            alert("請至少填寫一個選項！");
+            alert("請至少填寫一個題目！");
             return;
         }
 
@@ -132,13 +132,13 @@ export default function SingleClient() {
     };
 
     const handleClearHistory = () => {
-        if (confirm("確定要清除所有歷史紀錄嗎？")) {
+        if (confirm("確定要清除所有出題紀錄嗎？")) {
             updateList(list.id, { history: [] });
         }
     };
 
     const handleClearSlots = () => {
-        if (confirm("確定要清空所有格子嗎？")) {
+        if (confirm("確定要清空所有題目嗎？")) {
             const newSlots = list.slots.map(() => ({ label: "" }));
             updateList(list.id, { slots: newSlots });
         }
@@ -194,7 +194,7 @@ export default function SingleClient() {
 
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                         <div className="p-4 bg-gray-50 border-b border-gray-200">
-                            <h3 className="font-semibold text-gray-700">歷史紀錄 (本清單)</h3>
+                            <h3 className="font-semibold text-gray-700">出題紀錄 (本題庫)</h3>
                         </div>
                         <HistoryList history={list.history} />
                     </div>

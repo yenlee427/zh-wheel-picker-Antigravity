@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "單輪盤管理 | 繁中輪盤抽選器",
-    description: "新增、編輯與抽選您的輪盤清單",
+    title: "單人模式 | 中文小遊戲樂園",
+    description: "新增、編輯與抽題您的中文題庫",
 };
 
 export default function SingleLayout({

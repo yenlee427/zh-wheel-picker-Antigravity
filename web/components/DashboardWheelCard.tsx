@@ -37,7 +37,7 @@ const DashboardWheelCard = memo(({ list, monoColor, onUpdateList }: DashboardWhe
             .filter((i) => i >= 0);
 
         if (validIndices.length === 0) {
-            alert("此清單沒有有效選項");
+            alert("此題庫沒有有效題目");
             return;
         }
 
@@ -85,7 +85,7 @@ const DashboardWheelCard = memo(({ list, monoColor, onUpdateList }: DashboardWhe
                 <Link
                     href={`/single?list=${list.id}`}
                     className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
-                    title="編輯此輪盤"
+                    title="編輯此題庫"
                 >
                     <Edit2 size={16} />
                 </Link>
@@ -133,7 +133,7 @@ const DashboardWheelCard = memo(({ list, monoColor, onUpdateList }: DashboardWhe
                     }}
                 >
                     <Play size={16} fill={isSpinning ? "currentColor" : "none"} className={isSpinning ? "animate-spin" : ""} />
-                    {isSpinning ? "抽選中" : "開始旋轉"}
+                    {isSpinning ? "出題中" : "抽一題"}
                 </button>
             </div>
         </div>

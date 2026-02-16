@@ -81,7 +81,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         });
     }, []);
 
-    const addList = useCallback((name: string = `清單 ${state ? state.lists.length + 1 : 1}`) => {
+    const addList = useCallback((name: string = `題庫 ${state ? state.lists.length + 1 : 1}`) => {
         const newList = createNewList(name);
         setState((prev) => {
             if (!prev) return null;

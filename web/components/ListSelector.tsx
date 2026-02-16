@@ -49,10 +49,10 @@ export default function ListSelector({
 
     const handleDelete = () => {
         if (lists.length <= 1) {
-            alert("至少需要保留一個清單");
+            alert("至少需要保留一個題庫");
             return;
         }
-        if (confirm(`確定要刪除「${activeList?.name}」嗎？此動作無法復原。`)) {
+        if (confirm(`確定要刪除題庫「${activeList?.name}」嗎？此動作無法復原。`)) {
             onDeleteList(activeListId);
         }
     };
@@ -135,7 +135,7 @@ export default function ListSelector({
                     className="flex items-center gap-1 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition-colors font-medium text-sm"
                 >
                     <Plus size={16} />
-                    <span>新增清單</span>
+                    <span>新增題庫</span>
                 </button>
                 <div className="h-6 w-px bg-gray-200 mx-1"></div>
                 <button
@@ -145,7 +145,7 @@ export default function ListSelector({
                         ? "text-gray-300 cursor-not-allowed"
                         : "text-gray-400 hover:text-red-600 hover:bg-red-50"
                         }`}
-                    title="刪除目前清單"
+                    title="刪除目前題庫"
                 >
                     <Trash2 size={18} />
                 </button>
